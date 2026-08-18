@@ -3,8 +3,8 @@ import argparse
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("api_json", default="sdk/public/steam/steam_api.json", nargs="?")
-    ap.add_argument("class_name", default="SteamWrapper", nargs="?")
+    ap.add_argument("api_json", default="sdk/public/steam/steam_api.json", nargs="?", help="The location of the Steamworks api.json file.")
+    ap.add_argument("filename", default="SteamWrapper", nargs="?", help="The filename of the CPP/H to output (minus extension).")
     args = ap.parse_args()
 
     with open(args.api_json) as f:
@@ -55,15 +55,15 @@ def main():
         paramnames = paramnames.removesuffix(', ')
         
         if 'returntype_flat' in method:
-            thunks += f'\n{method['returntype_flat']} S_CALLTYPE {method['methodname_flat']}({params}) {{return {args.class_name}::{method['simplename']}({paramnames}); }}'
+            thunks += f'\n{method['returntype_flat']} S_CALLTYPE {method['methodname_flat']}({params}) {{return {args.filename}::{method['simplename']}({paramnames}); }}'
         else:
-            thunks += f'\n{method['returntype']} S_CALLTYPE {method['methodname_flat']}({params}) {{return {args.class_name}::{method['simplename']}({paramnames}); }}'
+            thunks += f'\n{method['returntype']} S_CALLTYPE {method['methodname_flat']}({params}) {{return {args.filename}::{method['simplename']}({paramnames}); }}'
 
-    with open(args.class_name + ".cpp", 'w') as cpp:
+    with open(args.filename + ".cpp", 'w') as cpp:
         cpp.write(f"""#define STEAM_API_NODLL
 #include <steam_api_flat.h>
 
-namespace {args.class_name}
+namespace {args.filename}
 {{
     static decltype(SteamInternal_SteamAPI_Init)* Init;
     static decltype(SteamAPI_InitFlat)* InitFlat;
@@ -143,7 +143,7 @@ void S_CALLTYPE SteamAPI_SetBreakpadAppID( uint32 unAppID ) {{ return SteamWrapp
 {thunks}
 """)
 
-    with open(args.class_name + ".h", 'w') as h:
+    with open(args.filename + ".h", 'w') as h:
         h.write(f"""#pragma once
 namespace SteamWrapper
 {{
